@@ -7,6 +7,7 @@ local reporter = {}
 local LineScanner = require("luacov.linescanner")
 local luacov = require("luacov.runner")
 local util = require("luacov.util")
+local stats = require("luacov.stats")
 
 ----------------------------------------------------------------
 --- Basic reporter class stub.
@@ -23,7 +24,6 @@ local ReporterBase = {} do
 ReporterBase.__index = ReporterBase
 
 function ReporterBase:new(conf)
-   local stats = require("luacov.stats")
    local data = stats.load(conf.statsfile)
 
    if not data then
@@ -270,12 +270,14 @@ function DefaultReporter:on_file_error(filename, error_type, message) --luacheck
    io.stderr:write(("Couldn't %s %s: %s\n"):format(error_type, filename, message))
 end
 
-function DefaultReporter:on_empty_line(_, _, line)
+function DefaultReporter:on_empty_line(filename, linenr, line)
    if line == "" then
       self:write("\n")
    else
       self:write(self._empty_format, " ", line, "\n")
    end
+
+   self._data[filename][linenr] = '-'
 end
 
 function DefaultReporter:on_mis_line(_, _, line)
@@ -365,6 +367,8 @@ function DefaultReporter:on_end()
          end
       end
    end
+
+   stats.save(self._cfg.statsfile, self._data)
 end
 
 end
